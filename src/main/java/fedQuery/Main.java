@@ -28,6 +28,7 @@ public class Main {
 		 */
 		String SourceFile = "";
 		String QueryFile = "";
+		boolean useCombinedSources = false;
 		if (args.length < 2) {
 
 			SourceFile = "ressources\\endpoints.txt";
@@ -42,6 +43,7 @@ public class Main {
 
 			// Param 1 : Query
 			QueryFile = args[1].toString();
+			useCombinedSources = args[2].toString().equals("1") ? true : false;
 
 		}
 		// final String SourceFile
@@ -78,8 +80,12 @@ public class Main {
 					.askSourceForTriplePattern(triplePattern);
 
 			// Sous-requêtes partageant les meme sources
-			HashMap<Integer, ArrayList<Integer>> combinedSource = fedQ
-					.getCombinedRequestFromSameSource(askResult);
+			HashMap<Integer, ArrayList<Integer>> combinedSource = null;
+			if (useCombinedSources){
+				combinedSource = fedQ
+						.getCombinedRequestFromSameSource(askResult);
+			}
+			
 
 			// Resultat final - Chaque requête d'une source avec Ask True + les
 			// requêtes combinées

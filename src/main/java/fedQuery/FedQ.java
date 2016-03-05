@@ -29,36 +29,36 @@ import org.openrdf.sail.nativerdf.NativeStore;
  * 
  */
 public class FedQ {
-	
-	private  String QUERY_FILE = "";
-	private  String SOURCE_FILE = "";
 
-	
-	public FedQ (String SOURCE_FILE , String QUERY_FILE ) {
-			
+	private String QUERY_FILE = "";
+	private String SOURCE_FILE = "";
+
+	public FedQ(String SOURCE_FILE, String QUERY_FILE) {
+
 		this.setQUERY_FILE(QUERY_FILE);
 		this.setSOURCE_FILE(SOURCE_FILE);
-		
+
 	}
 
-	
-	//Creation d'un depot local
+	// Creation d'un depot local
 	public Repository CreateNativeStore() throws RepositoryException {
 		File dataDir = new File("nativestore");
 		String indexes = "spoc,posc,cosp";
-		Repository repositoryLocal = new SailRepository(new NativeStore(dataDir, indexes));
+		Repository repositoryLocal = new SailRepository(new NativeStore(
+				dataDir, indexes));
 		repositoryLocal.initialize();
 		return repositoryLocal;
 	}
 
-	//afficher le contenu d'un repo
-	public void ReturnFinalResult(RepositoryConnection connectionLocal) throws RepositoryException, MalformedQueryException, QueryEvaluationException, IOException 
-	{
-		    
-	String requete=	requetePrincipale();
-//	System.out.println("requetePrincipale:" +requete);
+	// afficher le contenu d'un repo
+	public void ReturnFinalResult(RepositoryConnection connectionLocal)
+			throws RepositoryException, MalformedQueryException,
+			QueryEvaluationException, IOException {
+
+		String requete = requetePrincipale();
+		// System.out.println("requetePrincipale:" +requete);
 		int nbrResult = 0;
-		
+
 		GraphQueryResult graphResult;
 		graphResult = connectionLocal.prepareGraphQuery(QueryLanguage.SPARQL,
 				requete).evaluate();
@@ -66,13 +66,14 @@ public class FedQ {
 			nbrResult++;
 			Statement anRDFStatement = graphResult.next();
 			// ici on se contente d'afficher le Statement
-			
+
 			System.out.println(anRDFStatement);
 			System.out.println("------------------");
 		}
 		System.out.println(" résultats trouvés : " + nbrResult);
 	}
-	//interoger les end points par ASK
+
+	// interoger les end points par ASK
 	public Boolean askSource(String request, RepositoryConnection connection)
 			throws RepositoryException, MalformedQueryException,
 			QueryEvaluationException {
@@ -91,76 +92,68 @@ public class FedQ {
 
 	}
 
-	//recuperer les triples patternes
+	// recuperer les triples patternes
 	public String[] getTriplePattern() throws IOException {
 		ANTLRFileStream inputQuery = new ANTLRFileStream(QUERY_FILE);
 		String req = inputQuery.toString();
 		return req.split(System.getProperty("line.separator"));
-			}
+	}
 
 	// Recuperer les endPoints
 	public String[] getEndPointsList() throws IOException {
 		ANTLRFileStream inputSource = new ANTLRFileStream(SOURCE_FILE);
-				String sources = inputSource.toString();
+		String sources = inputSource.toString();
 		String[] linesSources = sources.split(System
 				.getProperty("line.separator"));
-		System.out.println("nbr de sources:"+linesSources.length);
+		System.out.println("nbr de sources:" + linesSources.length);
 
 		return linesSources;
 	}
 
-	//recuperer les resultats comme graphes et les ajouter au depot local
+	// recuperer les resultats comme graphes et les ajouter au depot local
 	public void FromSourceToRepo(RepositoryConnection conRepo, String request,
-			RepositoryConnection connection)
-					throws Exception, MalformedQueryException {
-int nbrResu=1;
+			RepositoryConnection connection) throws Exception,
+			MalformedQueryException {
+		int nbrResu = 1;
 
-///////////////////////
-try { 
-	String constructQuery = "CONSTRUCT  { " + request + "} where  { "
-			+ request + "} LIMIT 900";
+		// /////////////////////
+		try {
+			String constructQuery = "CONSTRUCT  { " + request + "} where  { "
+					+ request + "} LIMIT 900";
 
+			GraphQueryResult graphResult;
+			graphResult = connection.prepareGraphQuery(QueryLanguage.SPARQL,
+					constructQuery).evaluate();
+			System.out.println(constructQuery);
+			try {
+				while (graphResult.hasNext()) {
 
-	GraphQueryResult graphResult;
-	graphResult = connection.prepareGraphQuery(QueryLanguage.SPARQL,
-			constructQuery).evaluate();
-	System.out.println(constructQuery);
-    try { 
-    	while (graphResult.hasNext()) {
+					// ajouter le graphe au depot local
+					// //remarque: c'est plus simple d'utiliser une variable
+					Statement res = graphResult.next();
 
-			//ajouter le graphe au depot local
-			////remarque: c'est plus simple d'utiliser une variable 
-			Statement res = graphResult.next();
-		
-			//con.add(graphResult.next().getSubject(), graphResult.next().getPredicate(), graphResult.next().getObject());
-			conRepo.add(res.getSubject(), res.getPredicate(), res.getObject());
-	
-		
-			
-			System.out.println((nbrResu++)+ "graphe   :" + res); 
-            } 
-    } catch (Exception e) { 
-            e.printStackTrace();	
-    } finally { 
-            graphResult.close(); 
-    } 
-} finally { 
-	connection.close(); 
-}    	
+					// con.add(graphResult.next().getSubject(),
+					// graphResult.next().getPredicate(),
+					// graphResult.next().getObject());
+					conRepo.add(res.getSubject(), res.getPredicate(),
+							res.getObject());
 
-/////////////
-
-
-
-
-	
-			
-
+					System.out.println((nbrResu++) + "graphe   :" + res);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				graphResult.close();
+			}
+		} finally {
+			connection.close();
 		}
 
-	
+		// ///////////
 
-	//interoger les endpoints pour chaque TP
+	}
+
+	// interoger les endpoints pour chaque TP
 	public HashMap<MapKey, Boolean> askSourceForTriplePattern(
 			String[] triplePattern) throws IOException, RepositoryException,
 			MalformedQueryException, QueryEvaluationException {
@@ -177,7 +170,8 @@ try {
 			con = r.getConnection();
 			for (int j = 0; j < triplePattern.length; j++) {
 				// Récuperer le résultat
-				askResult.put(new MapKey(i, j), askSource(triplePattern[j], con));
+				askResult.put(new MapKey(i, j),
+						askSource(triplePattern[j], con));
 			}
 			con.close();
 		}
@@ -186,9 +180,8 @@ try {
 
 	// recuperer les resultats et les ajouter dans le depot local
 	public void getResults(RepositoryConnection conLocal,
-			HashMap<MapKey, Boolean> askResult)
-					throws Exception {
-		//recuperer les triples patterns et les endpoints
+			HashMap<MapKey, Boolean> askResult) throws Exception {
+		// recuperer les triples patterns et les endpoints
 		String[] linesSources = getEndPointsList();
 		String[] triplePattern = getTriplePattern();
 
@@ -206,8 +199,10 @@ try {
 				if (askResult.get(new MapKey(i, j)) != null
 						&& askResult.get(new MapKey(i, j))) {
 					// nombreDeResultat = nombreDeResultat +
-				System.out.println("triplePattern:"+ triplePattern[j].toString());
-					// charger les fichier dans un repo && Interroger le depot local
+					System.out.println("triplePattern:"
+							+ triplePattern[j].toString());
+					// charger les fichier dans un repo && Interroger le depot
+					// local
 					FromSourceToRepo(conLocal, triplePattern[j], connection);
 
 				}
@@ -218,7 +213,7 @@ try {
 
 	}
 
-///construire la requete initiale à partir du fichier requete
+	// /construire la requete initiale à partir du fichier requete
 	public String requetePrincipale() throws IOException {
 		String[] triplePattern = null;
 		String q = "";
@@ -228,9 +223,10 @@ try {
 			q += triplePattern[i] + ".";
 
 		}
-			return q = "CONSTRUCT  { " + q + "}  where  { " + q + "}";// LIMIT 5";
+		return q = "CONSTRUCT  { " + q + "}  where  { " + q + "}";// LIMIT 5";
 
 	}
+
 	public HashMap<Integer, ArrayList<Integer>> getCombinedRequestFromSameSource(
 			HashMap<MapKey, Boolean> askResult) throws IOException {
 
@@ -268,10 +264,8 @@ try {
 		return combinedQuery;
 
 	}
-	
-	
-	
-	public void getResults(RepositoryConnection conLocal, 
+
+	public void getResults(RepositoryConnection conLocal,
 			HashMap<MapKey, Boolean> askResult,
 			HashMap<Integer, ArrayList<Integer>> combinedSource)
 			throws Exception {
@@ -293,28 +287,30 @@ try {
 				if (askResult.get(new MapKey(i, j)) != null
 						&& askResult.get(new MapKey(i, j))) {
 					// nombreDeResultat = nombreDeResultat +
-					//selectFromSource(triplePattern[j], connection);
-					
-					FromSourceToRepo(conLocal, triplePattern[j],connection);
+					// selectFromSource(triplePattern[j], connection);
+
+					FromSourceToRepo(conLocal, triplePattern[j], connection);
 				}
 			}
-			System.out.println("---------> Requêtes combinées");
 
-			// Ajouter les requêtes combinées
-			ArrayList<Integer> combinedRequests = combinedSource.get(i);
-			// nombreDeResultat = nombreDeResultat+
-			selectFromMultipleSource(conLocal,linesSources, triplePattern,
-					combinedRequests, connection);
+			if (combinedSource != null) {
+				System.out.println("---------> Requêtes combinées");
+				// Ajouter les requêtes combinées
+				ArrayList<Integer> combinedRequests = combinedSource.get(i);
+				// nombreDeResultat = nombreDeResultat+
+				selectFromMultipleSource(conLocal, linesSources, triplePattern,
+						combinedRequests, connection);
+			}
+
 			connection.close();
 		}
 
-
 	}
-	
-	
-	private void selectFromMultipleSource(RepositoryConnection conLocal,String[] linesSources,
-			String[] triplePattern, ArrayList<Integer> combinedRequests,
-			RepositoryConnection connection) throws Exception {
+
+	private void selectFromMultipleSource(RepositoryConnection conLocal,
+			String[] linesSources, String[] triplePattern,
+			ArrayList<Integer> combinedRequests, RepositoryConnection connection)
+			throws Exception {
 
 		// Construire la requête avec WHERE des '.' entre les requêtes
 		String requteOrigine = "";
@@ -324,27 +320,25 @@ try {
 					+ triplePattern[combinedRequests.get(i)] + ". ";
 		}
 
-		FromSourceToRepo(conLocal,requteOrigine, connection);
+		FromSourceToRepo(conLocal, requteOrigine, connection);
 	}
-	
-	private RepositoryConnection getConnectionFromEndPoint(
-			String endPoint) throws RepositoryException {
-	//	String typeSource = endPointWithType.substring(1, 2);
-		//String endPoint = endPointWithType;
-	//	Object repositoryObj;
-	
+
+	private RepositoryConnection getConnectionFromEndPoint(String endPoint)
+			throws RepositoryException {
+		// String typeSource = endPointWithType.substring(1, 2);
+		// String endPoint = endPointWithType;
+		// Object repositoryObj;
+
 		Repository repository = new SPARQLRepository(endPoint);
-			
-	//	Repository repository = (Repository) repositoryObj;
+
+		// Repository repository = (Repository) repositoryObj;
 		repository.initialize();
 		// on ouvre une connexion au repository
 		// comme en JDBC, c'est à travers cette connexion que sont envoyées
 		// toute les requêtes
 		return repository.getConnection();
 	}
-	
-	
-	
+
 	public String getQUERY_FILE() {
 		return QUERY_FILE;
 	}
